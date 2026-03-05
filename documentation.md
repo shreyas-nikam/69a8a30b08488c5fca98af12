@@ -3,157 +3,146 @@ summary: Lab 7: Adversarial & Security Test Bank Builder - Clone Documentation
 feedback link: https://docs.google.com/forms/d/e/1FAIpQLSfWkOK-in_bMMoHSZfcIvAeO58PAH9wrDqcxnJABHaxiDqhSA/viewform?usp=sf_link
 environments: Web
 status: Published
-# Adversarial & Security Test Bank Builder Codelab
+# QuLab: Lab 7: Adversarial & Security Test Bank Builder
 
-## Introduction
-Duration: 0:05:00
+## Overview
+Duration: 5:00
 
-In the rapidly evolving landscape of Artificial Intelligence, ensuring the security and robustness of AI systems is paramount. Large Language Models (LLMs) and Machine Learning (ML) APIs are susceptible to various adversarial attacks, such as prompt injections and data poisoning.
+In the rapidly evolving landscape of Artificial Intelligence, ensuring the robustness and security of models—whether they are Large Language Models (LLMs) or Machine Learning APIs (ML APIs)—is paramount. This application provides a structured environment for developers and security researchers to build, execute, and audit adversarial security tests.
 
-This codelab introduces the **Adversarial & Security Test Bank Builder**, a Streamlit-based application designed for security engineers. This tool facilitates the creation, management, and execution of structured security test cases to probe AI systems for vulnerabilities within a "Safe Harbor" environment.
+### Importance of the Application
+Security testing in AI is often fragmented. This "Test Bank Builder" centralizes the process of:
+1.  **Defining Attack Surfaces:** Distinguishing between LLM-specific threats (like prompt injection) and ML API threats (like feature manipulation).
+2.  **Standardizing Evaluations:** Moving from ad-hoc testing to repeatable, "test bank" driven security audits.
+3.  **Auditability:** Generating cryptographic fingerprints for test results to ensure forensic integrity during compliance reviews.
 
-### Key Concepts Covered
-- **Attack Surface Definition:** Differentiating security testing between LLM prompt interfaces and structured ML Scoring APIs.
-- **Adversarial Test Banks:** Authoring structured JSON-based test cases focusing on threat categories and severity levels.
-- **Deterministic Evaluation:** Executing tests where actual system outputs are compared against expected safe behaviors.
-- **Forensic Integrity:** Generating audit-ready reports with cryptographic evidence (SHA256 hashing) for compliance and remediation.
-
-<aside class="positive">
-<b>Tip:</b> This application acts as a bridge between security research and practical AI deployment, allowing teams to automate the "Red Teaming" process.
-</aside>
+### Concepts Covered
+*   **Adversarial Testing:** Intentionally providing malicious inputs to find vulnerabilities.
+*   **Threat Categorization:** Classifying failures based on severity and type (e.g., Prompt Injection, PII leakage, Model Inversion).
+*   **Integrity Verification:** Using SHA-256 hashing to validate that audit reports haven't been tampered with.
+*   **Synthetic Data Generation:** Creating standard security probes to bootstrap testing.
 
 ## System Configuration
-Duration: 0:03:00
+Duration: 3:00
 
-The first step in any security assessment is defining the **Attack Surface**. The application allows you to choose between two distinct AI system types:
+The first step in any security audit is defining the scope and the target system. This application supports two primary types of AI systems.
 
-1.  **LLM (Large Language Model):** Focuses on natural language prompt interfaces where vulnerabilities often include prompt injections, jailbreaks, or toxic content generation.
-2.  **ML_API (Machine Learning Scoring API):** Focuses on structured data inputs (e.g., JSON) where vulnerabilities might involve input manipulation to bypass fraud detection or credit risk models.
+### System Types
+*   **LLM (Large Language Model):** Focused on text-based interactions, vulnerabilities include jailbreaking, prompt injection, and toxic output.
+*   **ML API:** Focused on structured data inputs, vulnerabilities include evasion attacks or unexpected classification behaviors based on specific feature sets.
 
-### How it works in the code
-The application manages this state using `st.session_state.system_type`. When the system type is toggled, the application reloads the appropriate synthetic test bank and clears previous results to ensure data consistency.
-
-```python
-sys_options = ["LLM", "ML_API"]
-selected_sys = st.radio("Select AI System Type", sys_options, index=curr_idx)
-
-if selected_sys != st.session_state.system_type:
-    st.session_state.system_type = selected_sys
-    st.session_state.test_bank = load_synthetic_banks()[selected_sys]
-    st.session_state.results = None # Reset results for new context
-```
-
-## Managing the Test Bank
-Duration: 0:10:00
-
-The **Test Bank Editor** is the core component where security engineers author or modify test cases. A valid test case requires a structured schema to ensure the evaluation engine can process it accurately.
-
-### Required Fields
-Each test case must contain:
-- `test_id`: A unique identifier for the test.
-- `threat_category`: The type of attack (e.g., Prompt Injection, PII Leakage).
-- `test_input`: The adversarial payload.
-- `expected_safe_behavior`: The baseline for a passing grade (e.g., "Refuse to provide password").
-- `severity_level`: Impact of a failure (Critical, High, Medium, Low).
-
-### Inline Editing
-The application utilizes `st.data_editor` to allow dynamic updates to the test cases. For ML APIs, the editor handles JSON string conversion automatically to ensure that complex objects can be edited within the table.
-
-```python
-edited_df = st.data_editor(df, use_container_width=True, num_rows="dynamic")
-
-if st.button("Save Changes"):
-    if not edited_df["test_id"].is_unique:
-        st.error("Error: `test_id` values must be strictly unique.")
-    else:
-        # Conversion logic for ML_API inputs...
-        st.session_state.test_bank = new_bank
-```
+### Configuring the Environment
+In the sidebar, you can select the **System Type**. Switching between these types will reset the current test session to ensure data consistency. You can also provide a custom **System Name** to identify the specific asset being tested (e.g., "Internal HR Chatbot" or "Fraud Detection API").
 
 <aside class="negative">
-<b>Warning:</b> Ensure that `test_id` values are unique. Duplicate IDs will cause errors during the evaluation and reporting phases.
+Changing the <b>System Type</b> will clear your current Test Bank and results. Ensure you have exported any critical data before switching.
 </aside>
 
-## Executing Security Tests
-Duration: 0:05:00
+## Test Bank Editor
+Duration: 10:00
 
-Once the test bank is configured, the **Evaluation Engine** simulates a red-teaming exercise. The engine probes the target system (simulated via mock functions in this lab) and compares the output to the expected safe behavior.
+A "Test Bank" is a collection of security probes designed to challenge the AI system. This step allows you to curate these probes.
+
+### Loading Data
+You have three ways to populate the test bank:
+1.  **Load Standard Test Bank:** Click this to generate a synthetic set of common security probes tailored to your selected system type.
+2.  **Upload Custom Test Bank:** Upload a `.json` file containing your own security tests.
+3.  **Manual Editing:** Use the dynamic Data Inspector to add, remove, or modify test cases directly within the app.
+
+### Data Inspector
+The editor allows you to modify:
+*   **Test ID:** Unique identifier for the probe.
+*   **Threat Category:** The specific vulnerability being tested (e.g., "Jailbreak").
+*   **Test Input:** The actual payload sent to the system.
+*   **Expected Safe Behavior:** The criteria for a "Pass."
+
+### Validation
+After editing, the application re-validates the JSON structure to ensure that fields like `test_input` are properly formatted, especially for ML APIs which require dictionary-like structures.
+
+<aside class="positive">
+Use the <b>Save Edits & Re-Validate</b> button after making manual changes to the table to ensure the Execution Engine receives the correct data.
+</aside>
+
+## Execution Engine
+Duration: 7:00
+
+The Execution Engine processes the test bank against a mock AI system. It evaluates whether the system's output violates security constraints.
 
 ### Evaluation Logic
-The core logic follows a deterministic pass/fail criteria:
+The engine uses a deterministic matching logic. A test is considered safe if:
 
-$$ \text{Result} = \begin{cases} \text{PASS} & \text{if } \text{Actual} \approx \text{Expected Safe Behavior} \\ \text{FAIL} & \text{otherwise} \end{cases} $$
+$$
+\text{output} \supseteq \text{expected\_safe\_behavior} \quad \text{or} \quad \text{output} \not\ni \text{sensitive\_keyword}
+$$
 
-### Triggering the Engine
-Clicking the "Run Evaluation Engine" button triggers the `execute_security_tests` function. This function iterates through the test bank and logs the system's responses.
+Where $\supseteq$ represents substring matching or heuristic pattern containment. If the system output contains forbidden content or fails to provide the expected refusal, it is flagged as a failure.
 
-```python
-if st.button("Run Evaluation Engine"):
-    with st.spinner("Executing Security Test Bank..."):
-        sys_func = get_mocked_ai_system(st.session_state.system_type)
-        results = execute_security_tests(
-            st.session_state.test_bank, 
-            sys_func, 
-            st.session_state.system_type
-        )
-        st.session_state.results = results
-```
-
-## Analyzing Findings
-Duration: 0:07:00
-
-The **Findings Dashboard** provides a high-level overview of the system's security posture. It aggregates results into actionable metrics.
-
-### Key Metrics
-- **Total Tests Evaluated:** The size of the test bank.
-- **System Pass Rate:** Percentage of tests that did not trigger a vulnerability.
-- **Critical Failures:** A count of failed tests marked with "Critical" severity, which usually require immediate patches.
-
-### Visualizing Failures
-The dashboard highlights failures based on their severity using a custom styling function. Critical failures are highlighted in red, and High severity in orange.
+### Running the Evaluation
+1.  Navigate to the **Execution Engine** page.
+2.  Click **Run Security Evaluation**.
+3.  The application will simulate calls to the AI system and compare the results against your test bank criteria.
 
 ```python
-def highlight_severity(s):
-    if s["severity_level"] == "Critical": 
-        return ["background-color: #ffcccc"] * len(s)
-    elif s["severity_level"] == "High": 
-        return ["background-color: #ffe6cc"] * len(s)
-    return [""] * len(s)
-
-st.dataframe(fail_df.style.apply(highlight_severity, axis=1))
+# Conceptual logic for the execution
+def execute_security_tests(test_bank, ai_system):
+    results = []
+    for test in test_bank:
+        response = ai_system.query(test['input'])
+        is_safe = validate(response, test['expected_behavior'])
+        results.append({"id": test['id'], "passed": is_safe})
+    return results
 ```
 
-## Audit and Forensic Export
-Duration: 0:05:00
+## Findings Dashboard
+Duration: 5:00
 
-The final step is the **Audit Export**. For regulatory compliance and internal security reviews, a permanent record of the test run is necessary.
+Once execution is complete, the application summarizes the results into actionable intelligence.
 
-### Cryptographic Integrity
-To ensure that the audit logs have not been tampered with, the application calculates a SHA256 hash for the audit package.
+### High-Level Metrics
+*   **Total Tests Executed:** The size of your test bank.
+*   **Total Fails:** Number of probes that successfully bypassed security.
+*   **Critical Vulnerabilities:** High-severity failures that require immediate attention.
 
-$$ H = \text{SHA256}(\text{File Content}) $$
+### Visualizations
+The dashboard provides bar charts to help you identify patterns in the failures:
+*   **By Threat Category:** Helps identify if the system is particularly weak against specific types of attacks (e.g., it passes PII checks but fails Prompt Injection).
+*   **By Severity Level:** Helps prioritize remediation efforts.
 
-### The Audit Bundle
-The "Finalize Security Audit" process generates a ZIP archive containing:
-1.  `security_test_bank.json`: The specific cases used.
-2.  `test_execution_results.json`: Raw outputs from the AI system.
-3.  `findings_summary.json`: Aggregated metrics.
-4.  `executive_summary.md`: A human-readable report summarizing the risk posture.
+<aside class="negative">
+If <b>Critical Vulnerabilities</b> are detected, the dashboard will display a red warning banner with specific Test IDs to investigate.
+</aside>
+
+## Export & Audit
+Duration: 5:00
+
+The final step is to generate an audit trail. This is crucial for compliance, where you must prove that security testing was performed and that the results have not been altered.
+
+### Forensic Integrity
+To ensure forensic integrity, the application calculates a cryptographic fingerprint for every artifact generated:
+
+$$
+H = \text{SHA256}(\text{File Content})
+$$
+
+Where $H$ is the 256-bit hash. Any modification to the test results would result in a different hash, alerting auditors to potential tampering.
+
+### Generating the Audit Bundle
+Click **Generate Audit Bundle** to create:
+1.  **Executive Summary:** A Markdown report summarizing the run.
+2.  **Evidence Manifest:** A JSON file containing the SHA-256 hashes of all artifacts.
+3.  **JSON Artifacts:** The raw test bank and execution results.
+
+### Downloads
+You can download the generated reports using the buttons provided:
 
 <button>
-  [Download Sample Audit Format](https://www.quantuniversity.com)
+  [Download Executive Summary](https://example.com)
 </button>
 
-## Conclusion
-Duration: 0:02:00
+<button>
+  [Download JSON Artifact Bundle](https://example.com)
+</button>
 
-Congratulations! You have explored the functionalities of the Adversarial & Security Test Bank Builder. 
-
-### Summary of Workflow
-1.  **Configure** the target system type (LLM or ML API).
-2.  **Author** adversarial test cases in the Editor.
-3.  **Execute** the evaluation engine to simulate attacks.
-4.  **Analyze** vulnerabilities in the Dashboard.
-5.  **Export** a cryptographically sealed audit bundle for forensic records.
-
-By following this structured approach, developers and security researchers can build safer, more resilient AI systems.
+<aside class="positive">
+Always store the <b>Evidence Manifest</b> alongside your reports. It serves as the digital seal of authenticity for your security audit.
+</aside>
