@@ -1,119 +1,99 @@
 
-# Streamlit Application Specification: Adversarial & Security Test Bank Builder
+# Streamlit App Specification: Adversarial & Security Test Bank Builder
 
-## 1. Application Overview
-The **Adversarial & Security Test Bank Builder** is a specialized tool for Security Engineers to operationalize threat-driven testing for AI systems. The application allows users to define a "System Under Test" (either an LLM Prompt Interface or an ML Scoring API), author structured security test cases targeting specific threat categories (e.g., Prompt Injection, Data Leakage), execute those tests against deterministic mocks, and generate audit-ready evidence artifacts.
+## 0. One-paragraph summary
+The Adversarial & Security Test Bank Builder is an enterprise-grade tool designed for Security Engineers and AI Risk Leads to operationalize threat-driven testing for AI systems. The application allows users to toggle between testing an LLM Prompt Interface or an ML Scoring API. Users can author, edit, and manage a structured test bank containing adversarial scenarios (e.g., Prompt Injection, Data Leakage, Input Evasion). The app executes these tests against deterministic mock interfaces—using heuristic detection for LLMs and perturbation checks for ML models—aggregating results into a risk-scored findings dashboard. Finally, it generates an audit-ready export bundle, complete with a Markdown executive summary and a SHA-256 evidence manifest to ensure forensic integrity.
 
-### High-Level Story Flow
-1.  **System Selection:** The engineer selects the AI architecture (LLM vs. ML API) and initializes the testing session.
-2.  **Test Bank Authoring:** The engineer builds a library of adversarial inputs and defines expected safe behaviors using a structured editor.
-3.  **Deterministic Execution:** The tool runs the test bank against an AI interface that implements heuristic-based (LLM) or perturbation-based (ML) security checks.
-4.  **Risk Assessment:** Findings are aggregated into a dashboard that highlights critical vulnerabilities and summarizes the threat posture.
-5.  **Artifact Generation:** A cryptographically hashed evidence manifest and executive summary are generated for compliance and forensic audit.
+## 1. Functional Equivalence Contract
+### 1.1 What must stay identical to the notebook
+- **Mock Logic:** The `mock_llm_chatbot` (heuristic regex) and `mock_ml_scoring_api` (boundary/type checks) logic must be exactly as implemented in `source.py`.
+- **Pass/Fail Logic:** The evaluation criteria in `execute_security_tests` (comparing actual output notes/status against `expected_safe_behavior`) must remain unchanged.
+- **Threat Categories:** Only the specified 6 categories (Prompt Injection, Data Leakage, etc.) are supported.
+- **Severity Levels:** The 4-tier system (Low, Medium, High, Critical) is non-negotiable.
+- **Hashing:** The use of SHA-256 for artifact verification is mandatory.
 
----
+### 1.2 Forbidden changes
+- Do not add real LLM API calls; the app must use the deterministic mocks provided in `source.py`.
+- Do not introduce automated attack generation (e.g., GCG or AutoDAN); testing remains focused on manually authored banks.
+- Do not modify the ML feature set (`age`, `income`, `credit_score`).
 
-## 2. Code Requirements
+## 2. Data Contract & Validation
+### 2.1 Canonical schema (Test Case Bank)
+| Column name | Role | dtype | unit | allowed range | required (Y/N) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `test_id` | ID | string | N/A | Unique identifier | Y |
+| `threat_category` | Feature | string | N/A | See THREAT_CATEGORIES list | Y |
+| `test_input` | Feature | string/dict | N/A | String (LLM) or Dict (ML) | Y |
+| `expected_safe_behavior` | Target | string/dict | N/A | Expected mock response | Y |
+| `severity_level` | Metadata | string | N/A | See SEVERITY_LEVELS list | Y |
 
-### Import Statement
-```python
-from source import *
-```
+### 2.2 Validation behavior
+- **Test Authoring:** Any manual entry must be passed through `source.validate_test_case`. If a category or severity is invalid, the UI must display an error toast.
+- **ML Input Feature Check:** For ML API systems, `test_input` must be a JSON dictionary containing `age`, `income`, and `credit_score`.
+- **Duplicate IDs:** Hard fail if `test_id` is not unique within the current session bank.
 
-### Session State Management
-The following keys will be managed in `st.session_state`:
-*   `system_type`: String ("LLM" or "ML_API"). Defaults to "LLM".
-*   `test_bank`: List of dictionaries containing authored test cases.
-*   `execution_results`: List of dictionaries containing PASS/FAIL data from the last run.
-*   `findings_summary`: Dictionary summarizing risks.
-*   `artifact_manifest`: List of file paths and hashes generated during the session.
-*   `current_report_dir`: Path to the directory where artifacts are stored for the current `RUN_ID`.
+### 2.3 Upload handling
+- **Accepted formats:** JSON only.
+- **Schema Report:** Upon upload, the app must verify the presence of all required keys and provide a "Valid Schema" green banner or a "Schema Mismatch" red banner listing missing fields.
 
-### UI Interaction to Function Mapping
+## 3. UX / IA: Pages, Layout, and State Machine
+### 3.1 Information architecture
+The app uses a sidebar selectbox for navigation.
+1.  **System Configuration:** Select "LLM" or "ML_API". Input the "AI System Name" (e.g., "Corporate Chatbot v1").
+2.  **Test Bank Editor:** View the current bank in an `st.data_editor`. Add or delete rows. Includes a "Reset to Defaults" button using `source.get_synthetic_test_bank`.
+3.  **Security Execution:** A "Run Assessment" button that triggers the batch execution logic. Displays a live progress bar.
+4.  **Findings Dashboard:** Visual summary of PASS/FAIL status, failures by severity (colored bar chart), and detailed failure breakdown.
+5.  **Export & Audit:** Form to trigger artifact generation. Displays the SHA-256 hashes for all generated files.
 
-| UI Component | Action | Function / Logic |
-| :--- | :--- | :--- |
-| **System Selector** (Radio) | Selection Change | Update `st.session_state.system_type`, Clear `test_bank` and `execution_results`. |
-| **Load Samples** (Button) | Click | Call `save_json_artifact` for sample data, then `load_test_bank()` and update `st.session_state.test_bank`. |
-| **Add Test Case** (Form) | Submit | Call `create_test_case()` with form inputs; append to `st.session_state.test_bank`. |
-| **Run Assessment** (Button) | Click | Call `get_mocked_ai_system(system_type)`, then `execute_security_tests()`. Store in `execution_results`. |
-| **Summarize Findings** | Automatic/Triggered | Call `classify_and_summarize_findings()`. |
-| **Export Bundle** (Button) | Click | Call `generate_executive_summary_report()`, `save_markdown_artifact()`, then iterate through files with `generate_sha256_hash()` to build manifest. |
+### 3.2 Workflow gates & resets
+- **Gate 1:** System Type selection is required before accessing any other page. Changing the system type clears `st.session_state.test_results` and `st.session_state.findings_summary`.
+- **Gate 2:** Execution requires at least 1 test case in the editor.
+- **Gate 3:** Dashboard and Export are disabled until a successful execution run has completed.
 
----
+### 3.3 Loading states
+- `st.spinner("Executing Security Tests...")`: Used during the loop through test cases in `execute_security_tests`.
+- `st.spinner("Generating Cryptographic Manifest...")`: Used during the hashing of artifacts in `export_artifacts`.
 
-## 3. Application Structure and Flow
+## 5. App Architecture
+### 5.1 Separation of concerns
+- `source.py`: Contains all detection heuristics, scoring logic, summary aggregation, and hashing.
+- `app.py`: Manages the state machine, renders data tables, and handles file downloads.
 
-### Page Layout
-The application will use `st.tabs` to organize the workflow into five stages.
+### 5.2 Public functions imported from `source.py`
+- `get_synthetic_test_bank(system_type: str) -> List[dict]`
+- `validate_test_case(test_case: dict) -> None`
+- `execute_security_tests(test_bank: List[dict], system_type: str) -> List[dict]`
+- `classify_and_summarize_findings(results: List[dict]) -> dict`
+- `generate_executive_summary_report(summary: dict, system_type: str, system_name: str, run_id: str) -> str`
+- `export_artifacts(artifacts: dict, out_dir: str) -> dict` (Note: The manifest hash logic is inside this).
 
-#### Tab 1: System Configuration
-*   **Markdown:** Introduction to the persona (Security Engineer) and the goal of building a threat-driven test bank.
-*   **Widget:** `st.radio` to select `AI_SYSTEM_TYPE` ("LLM" or "ML_API").
-*   **Logic:** If the radio value changes, trigger a session state reset for downstream data to maintain consistency.
+### 5.3 Determinism & caching
+- `@st.cache_data` for `get_synthetic_test_bank` based on `system_type`.
+- **Session State Keys:**
+    - `test_bank`: The list of dicts currently being edited.
+    - `test_results`: The list of dicts from the latest execution.
+    - `findings_summary`: The aggregation dict.
+    - `system_type`: "LLM" or "ML_API".
+    - `run_id`: Created upon "Run Assessment" click.
 
-#### Tab 2: Test Bank Editor
-*   **Markdown:** Explanation of the Test Case schema (ID, Category, Input, Expected Behavior, Severity).
-*   **Actionable:** A "Load Industry Standard Samples" button that calls `load_test_bank` for the selected system type.
-*   **Manual Entry Form:**
-    *   `st.text_input` for `test_id`.
-    *   `st.selectbox` for `threat_category` (using `THREAT_CATEGORIES`).
-    *   `st.text_area` for `test_input` (Instructions: "Enter prompt for LLM or JSON string for ML API").
-    *   `st.text_area` for `expected_safe_behavior`.
-    *   `st.selectbox` for `severity_level` (using `SEVERITY_LEVELS`).
-*   **Logic:** `create_test_case` is called on submission to validate fields.
-*   **Display:** `st.dataframe` showing the current `st.session_state.test_bank`.
+## 6. Robustness, Fallbacks, and Auditability
+### 6.1 Failure modes checklist
+- **Malformed ML Input:** If a user authors a test case for ML API where `test_input` is a string instead of a dict, `source.validate_test_case` should be caught in a `try-except` block in the UI.
+- **Directory Permissions:** If the app cannot write to `reports/`, display a warning to the user and offer a JSON download directly via `st.download_button` as fallback.
 
-#### Tab 3: Execution Engine
-*   **Requirement:** Only enabled if `len(st.session_state.test_bank) > 0`.
-*   **Markdown:** Overview of deterministic execution logic. For LLMs, it uses heuristics (keyword blocks); for ML, it uses perturbation checks (range/type validation).
-*   **Action:** "Execute Security Tests" button.
-*   **Logic:** Calls `execute_security_tests` using `st.session_state.test_bank` and the function returned by `get_mocked_ai_system`.
-*   **Display:** `st.table` or `st.dataframe` of results showing `test_id`, `test_result` (PASS/FAIL), and `notes`.
-*   **Visual Cue:** Use `st.success` for PASS and `st.error` for FAIL rows.
+### 6.2 Formula Handling
+The app will display the integrity verification formula in the **Export & Audit** page:
+st.markdown(r"$$ H = \text{SHA256}(\text{File Content}) $$")
 
-#### Tab 4: Findings Dashboard
-*   **Requirement:** Only enabled if `st.session_state.execution_results` exists.
-*   **Logic:** Call `classify_and_summarize_findings`.
-*   **Metrics:** `st.columns` displaying Total Tests, Total Fails, and Critical Failures.
-*   **Visualizations:**
-    *   `st.bar_chart` of Failures by Severity.
-    *   `st.bar_chart` of Failures by Threat Category.
-*   **Alert:** If `findings_summary["critical_failures"]` is not empty, display a warning using `st.warning` listing the IDs of critical failures.
+### 6.3 Export manifest
+The `evidence_manifest.json` generated by `source.export_artifacts` must be displayed in a code block on the final page, showing:
+- `filename`
+- `sha256_hash`
+- `timestamp`
 
-#### Tab 5: Audit & Export
-*   **Markdown:** Explanation of forensic integrity and hashing.
-*   **Formula Rendering:**
-    ```python
-    st.markdown(r"$$ H = \text{SHA256}(\text{File Content}) $$")
-    st.markdown(r"where $H$ is the 256-bit cryptographic hash used to verify that the assessment evidence has not been tampered with.")
-    ```
-*   **Action:** "Generate Audit Bundle" button.
-*   **Logic:**
-    1. Call `generate_executive_summary_report`.
-    2. Save all results using `save_json_artifact` and `save_markdown_artifact`.
-    3. Iterate over the `artifact_paths` to generate hashes using `generate_sha256_hash`.
-    4. Save the `evidence_manifest.json`.
-*   **Display:** A final table showing: Artifact Filename | Relative Path | SHA-256 Hash.
-*   **Markdown:** Render the `executive_summary_content` directly in the UI for a preview.
-
----
-
-## 4. Typography and Accessibility
-*   **Base Font:** Sans-serif (Streamlit default).
-*   **Code Blocks:** All JSON snippets and CLI commands rendered using `st.code`.
-*   **Color System:**
-    *   **Critical:** Red (`st.error`)
-    *   **High:** Orange (`st.warning`)
-    *   **Medium:** Yellow
-    *   **Low/Pass:** Green (`st.success`)
-*   **Input Validation:** Hard-fail logic (via `st.error` and `st.stop`) if the user attempts to add an invalid category or severity level.
-
----
-
-## 5. Acceptance Criteria Verification
-*   User can switch between LLM and ML API.
-*   At least 1 custom test case can be added to the bank.
-*   Executing tests produces a results dataframe.
-*   Failures are correctly aggregated by severity.
-*   The export section generates a JSON manifest containing SHA-256 strings for all files in the current `RUN_ID` directory.
+### 6.4 Instructional Content (Storyline)
+- **Page 1 (Configuration):** Explain that the first step in security testing is defining the "Attack Surface." LLMs are exposed via unstructured text (Prompt Interface), while ML APIs are exposed via structured feature vectors.
+- **Page 2 (Editor):** Discuss the "Threat Taxonomy." Each test case is mapped to a specific risk like "Data Leakage" to ensure coverage across the OWASP Top 10 for LLMs.
+- **Page 3 (Execution):** Detail the "Detection Engine." For LLMs, we use **Heuristic Detection** (Regex strings). For ML APIs, we use **Perturbation Testing** (testing how the model reacts to out-of-range values like `age: -10`).
+- **Page 4 (Dashboard):** Focus on "Risk Aggregation." Not all failures are equal; a "Critical" failure in Data Leakage represents a higher business risk than a "Low" severity failure in Input Evasion.
+- **Page 5 (Export):** Emphasize "Chain of Custody." In regulated AI environments, security tests must be reproducible and hashed to prove that findings haven't been tampered with post-assessment.
