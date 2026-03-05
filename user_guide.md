@@ -3,110 +3,103 @@ summary: Lab 7: Adversarial & Security Test Bank Builder - Clone User Guide
 feedback link: https://docs.google.com/forms/d/e/1FAIpQLSfWkOK-in_bMMoHSZfcIvAeO58PAH9wrDqcxnJABHaxiDqhSA/viewform?usp=sf_link
 environments: Web
 status: Published
-# Adversarial & Security Test Bank Builder
+# QuLab: Adversarial & Security Test Bank Builder
 
-## Introduction and System Configuration
+## Introduction and Context
 Duration: 0:05:00
 
-In the rapidly evolving landscape of Artificial Intelligence, ensuring the security and robustness of AI models is paramount. This application provides a structured framework for Security Engineers to build, manage, and execute adversarial test banks against AI systems.
+In the rapidly evolving landscape of Artificial Intelligence, ensuring the security and robustness of AI systems is paramount. The **QuLab: Adversarial & Security Test Bank Builder** is a comprehensive tool designed for Security Engineers to evaluate AI systems—specifically Large Language Models (LLMs) and Machine Learning (ML) APIs—against potential vulnerabilities.
 
-### Importance of Adversarial Testing
-Adversarial testing involves intentionally challenging an AI system with inputs designed to trigger failures, expose vulnerabilities, or bypass safety filters. Unlike standard performance testing, security testing focuses on the "worst-case" scenarios to ensure that the system remains safe and reliable under attack.
+The core concept of this application is **Adversarial Testing**. This involves intentionally providing malicious or unexpected inputs to a system to see if it behaves in an unsafe manner. By building a structured "Test Bank," organizations can systematically probe their AI models for weaknesses like prompt injections, data leakage, or biased outputs within a "Safe Harbor" environment that doesn't risk production data.
 
-### Concepts Covered
-1.  **Threat Categories**: Understanding different ways AI systems can be compromised, such as Prompt Injection or Data Leakage.
-2.  **Severity Mapping**: Categorizing risks based on their potential impact on the organization.
-3.  **Deterministic Evaluation**: Moving from vibes-based testing to structured, repeatable checks.
-4.  **Forensic Integrity**: Ensuring that security audit results are tamper-proof and compliant.
-
-### Selecting Your Architecture
-The first step in your workflow is defining the target AI system. The application supports two primary architectures:
--   **LLM (Large Language Model)**: Focuses on text-based interactions, prompts, and linguistic vulnerabilities.
--   **ML API**: Focuses on structured data, numerical inputs, and traditional machine learning endpoint vulnerabilities.
-
-Select your **AI System Type** in the Configuration screen to initialize the session. Note that changing this selection later will reset your progress to maintain data integrity.
-
-## Building the Test Bank
-Duration: 0:10:00
-
-A security assessment is only as good as the tests it contains. In this stage, you author the structural test cases that will be used to probe the AI system.
-
-### Industry Standard Baselines
-For users new to adversarial testing, the application allows you to **Load Industry Standard Samples**. These are pre-configured test cases based on common vulnerabilities seen in the field. Loading these provides an immediate baseline for your assessment.
-
-### Creating Custom Test Cases
-To build a comprehensive test bank, you can manually define custom test cases. Each test case requires several key components:
--   **Test ID**: A unique identifier for tracking (e.g., TC-101).
--   **Threat Category**: The specific type of risk being tested. Common categories include:
-    -   *Prompt Injection*: Attempting to override system instructions.
-    -   *Data Leakage*: Trying to extract sensitive training data.
-    -   *Model Inversion*: Probing the model to reconstruct private inputs.
-    -   *Jailbreak*: Attempting to bypass safety filters to generate prohibited content.
--   **Test Input**: The actual data or prompt sent to the AI.
--   **Expected Safe Behavior**: A description of how the system *should* react if it is secure.
--   **Severity Level**: The risk level (Low, Medium, High, Critical) associated with a failure of this specific test.
-
-Once added, these cases are stored in a centralized table for review before execution.
-
-## The Execution Engine
-Duration: 0:07:00
-
-The Execution Engine is where the theoretical test bank meets the operational reality of the AI system. This engine runs the defined test cases against a mocked AI interface to evaluate resilience.
-
-### How Execution Works
-The application uses deterministic logic to evaluate results:
--   **LLM Tests**: Utilize **Heuristic Checks**. The engine looks for specific keywords or patterns that indicate a safety block or a successful attack.
--   **ML API Tests**: Utilize **Perturbation Checks**. The engine checks if the system handles unexpected data ranges or type mismatches correctly.
-
-### Running the Tests
-Clicking **Execute Security Tests** triggers the automation. The engine processes each item in the test bank and compares the AI's response against the "Expected Safe Behavior."
-
-### Reviewing Results
-Once completed, the application provides a visual status for each test:
--   <b>PASS</b> (Green): The system behaved as expected and maintained security boundaries.
--   <b>FAIL</b> (Red): The system failed the security check, requiring further investigation or remediation.
-
-Detailed notes are provided for each execution to help the engineer understand why a specific test passed or failed.
-
-## Analyzing Findings and Risk
-Duration: 0:08:00
-
-After execution, the raw data must be converted into actionable intelligence. The Findings Dashboard aggregates the results to provide a high-level view of the system's security posture.
-
-### Metrics and Risk Aggregation
-The dashboard calculates three primary metrics:
-1.  **Total Tests**: The scope of the assessment.
-2.  **Total Fails**: The number of vulnerabilities discovered.
-3.  **Critical Fails**: The number of high-impact vulnerabilities that require immediate attention.
-
-### Visualizing the Failure Surface
-To help prioritize remediation efforts, the dashboard generates visual distributions:
--   **Failures by Severity**: Understand if your vulnerabilities are minor bugs or catastrophic risks.
--   **Failures by Threat Category**: Identify if the AI system is particularly weak in one area (e.g., it might be great at stopping Data Leakage but poor at preventing Prompt Injections).
-
-If critical failures are detected, the dashboard will display a prominent alert to ensure they are not overlooked by the security team.
-
-## Audit and Export
-Duration: 0:05:00
-
-The final stage of the workflow is ensuring compliance. In regulated industries, it is not enough to simply run tests; you must prove that the tests were conducted and that the results have not been altered.
-
-### Cryptographic Integrity
-To ensure forensic validity, the application generates a cryptographic hash for every report and data file produced.
-
-$$ H = \text{SHA256}(\text{File Content}) $$
-
-Where $H$ is the 256-bit cryptographic hash used to verify that the assessment evidence has not been tampered with. Even a single character change in the report would result in a completely different hash value.
-
-### Generating the Audit Bundle
-By clicking **Generate Audit Bundle**, the application packages the following into a secure report:
--   **Execution Results**: The raw data of every test run.
--   **Export Metadata**: Details about the run ID and system configuration.
--   **Executive Summary**: A high-level markdown report summarizing the findings for stakeholders.
--   **Evidence Manifest**: A master list of all files and their corresponding SHA-256 hashes.
+Through this codelab, you will learn how to:
+1.  Define the attack surface of an AI system.
+2.  Author and manage structured security test cases.
+3.  Execute a deterministic evaluation engine to identify vulnerabilities.
+4.  Analyze security metrics and export forensic-ready audit logs.
 
 <aside class="positive">
-<b>Best Practice:</b> Always save the Evidence Manifest separately from the data files. This allows external auditors to verify the integrity of your security claims at a later date.
+<b>Key Concept:</b> A "Safe Harbor" environment allows security professionals to simulate attacks without affecting the actual user-facing application or its data integrity.
 </aside>
 
-This bundle serves as a "Gold Source" of truth for the security assessment, ready for submission to compliance officers or internal risk committees.
+## System Configuration
+Duration: 0:02:00
+
+The first step in any security assessment is defining the target. In this application, you begin by selecting the **AI System Type** you wish to test. This selection defines the "Attack Surface"—the different points where an attacker could potentially interact with the system.
+
+Currently, the application supports two primary types of systems:
+1.  **LLM (Large Language Model):** Focuses on prompt-based interfaces, such as chatbots or text generators. The primary risks here involve text manipulations like "Prompt Injection."
+2.  **ML_API (Machine Learning API):** Focuses on structured data inputs, such as credit scoring or risk assessment APIs. The risks here often involve feature manipulation or "Adversarial Examples" in data.
+
+Once you select the system type, the application automatically loads a relevant synthetic test bank to get you started.
+
+## Test Bank Authoring and Editing
+Duration: 0:07:00
+
+A security test bank is a collection of structured test cases. Each case is designed to probe a specific security concern. In this step, you act as a Security Author to refine the tests.
+
+A valid security test case consists of:
+- **Test ID:** A unique identifier for the case.
+- **Threat Category:** The type of attack being simulated (e.g., Prompt Injection, PII Leakage).
+- **Test Input:** The actual malicious payload or data sent to the AI.
+- **Expected Safe Behavior:** How the system *should* respond if it is secure.
+- **Severity Level:** The risk impact if the test fails (Low, Medium, High, Critical).
+
+The application provides two ways to manage these tests:
+- **Bulk Upload:** You can upload a custom `security_test_bank.json` file. The system validates the JSON structure to ensure all required fields are present.
+- **Inline Editor:** An interactive data grid allows you to modify test cases on the fly, add new rows, or delete irrelevant tests.
+
+<aside class="negative">
+<b>Warning:</b> Ensure that every <b>test_id</b> is unique. Duplicate IDs will prevent the system from accurately tracking results during the execution phase.
+</aside>
+
+## Executing Security Tests
+Duration: 0:04:00
+
+Once your test bank is finalized, it is time to trigger the **Evaluation Engine**. This engine simulates the interaction between an attacker (providing the "Test Input") and the AI system.
+
+The engine follows a deterministic logic to determine if a system is "Vulnerable" or "Secure" based on the following formula:
+
+$$ \text{Result} = \begin{cases} \text{PASS} & \text{if } \text{Actual Output} \approx \text{Expected Safe Behavior} \\ \text{FAIL} & \text{otherwise} \end{cases} $$
+
+When you run the evaluation, the engine:
+1.  Sends the inputs to a mocked version of the AI system.
+2.  Captures the actual output.
+3.  Compares the actual output against your defined "Expected Safe Behavior."
+4.  Classifies the findings based on threat categories and severity.
+
+## Analyzing Findings
+Duration: 0:05:00
+
+After execution, the **Findings Dashboard** provides a high-level view of the system's security posture. This dashboard translates raw test results into actionable risk metrics.
+
+Key metrics displayed include:
+- **Total Tests Evaluated:** The scope of the current audit.
+- **System Pass Rate:** The percentage of tests where the AI behaved safely.
+- **Critical Failures:** The count of high-stakes vulnerabilities that require immediate remediation.
+
+The application also provides a detailed table of failures. Failures are color-coded based on severity:
+- **Red (Critical):** Immediate attention required. These often represent direct bypasses of safety filters.
+- **Orange (High):** Significant vulnerabilities that could lead to data exposure or system misuse.
+
+Reviewing these failures allows security engineers to understand *where* the model's defenses are failing and *what* kind of inputs are causing the breakdown.
+
+## Audit Export and Forensic Integrity
+Duration: 0:03:00
+
+The final phase of the security workflow is documentation. In a professional setting, security assessments must be reproducible and tamper-proof.
+
+The **Audit Export** feature generates a comprehensive security export package. To ensure forensic integrity, the application uses cryptographic hashing. Each file in the export bundle is hashed to ensure that the findings cannot be altered after the audit is finalized.
+
+The integrity is verified using the SHA256 algorithm:
+$$ H = \text{SHA256}(\text{File Content}) $$
+
+The exported **Audit Bundle (ZIP)** includes:
+1.  The original **Security Test Bank** used.
+2.  The raw **Execution Results**.
+3.  A **Findings Summary** in JSON format.
+4.  An **Executive Summary Report** in Markdown, providing a human-readable overview of the risk assessment.
+
+<aside class="positive">
+<b>Best Practice:</b> Always download and archive the Audit Bundle for compliance purposes. It serves as evidence of the security testing performed at a specific point in time.
+</aside>
